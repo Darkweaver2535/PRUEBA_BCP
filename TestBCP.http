@@ -1,0 +1,6 @@
+@TestBCP_HostAddress = http://localhost:5248
+
+GET {{TestBCP_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
