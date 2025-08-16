@@ -855,10 +855,7 @@ GO
 ## **2. Si no tienes SQL Server en Mac, usa Docker:**
 
 ```bash
-# Instalar SQL Server en Docker (recomendado para Mac)
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=TuPassword123!" \
-   -p 1433:1433 --name sqlserver --hostname sqlserver \
-   -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=TuPassword123! -p 1433:1433 --name sqlserver -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 Luego conecta Azure Data Studio a:
