@@ -957,11 +957,176 @@ VALUES ('Test User', 'test@test.com', 'e10adc3949ba59abbe56e057f20f883e4bb077a59
 ## **Recomendación para la prueba:**
 
 **Opción 1 (SQL Server + Docker)**: Más profesional, usa stored procedures
-**Opción 2 (SQLite)**: Más rápido de configurar, pero tendrías que modificar los servicios para no usar stored procedures
+¡Perfecto! Después de ejecutar el script SQL, sigues estos pasos:
 
-Para la prueba técnica, te recomiendo **Docker + SQL Server** porque:
-1. Demuestra conocimiento de SQL Server
-2. Usa stored procedures como piden
-3. Es más parecido al entorno real del BCP
+## **6. Verificar que la base de datos se creó correctamente:**
 
-¿Con cuál opción te sientes más cómodo?
+En Azure Data Studio, ejecuta esta consulta para verificar:
+```sql
+USE TestBCP;
+SELECT * FROM Users;
+```
+
+Deberías ver el usuario de prueba que se insertó.
+
+## **7. Crear las migraciones de Entity Framework:**
+
+Aunque ya creaste la base manualmente, necesitas sincronizar Entity Framework:
+
+```bash
+# Ir a la carpeta del proyecto
+cd TestBCP
+
+# Crear migración inicial
+dotnet ef migrations add InitialCreate
+
+# Aplicar migración (esto sincroniza EF con tu base existente)
+dotnet ef database update
+```
+
+## **8. Ejecutar el proyecto:**
+
+```bash
+dotnet run
+```
+
+Deberías ver algo como:
+```
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5167
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+```
+
+## **9. Probar los endpoints:**
+
+### **Primer endpoint - Login:**
+```bash
+curl -X POST http://localhost:5167/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+  "email": "test@test.com",
+  "password": "123456"
+}'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "success": true,
+  "message": "Login exitoso",
+  "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "errors": []
+}
+```
+
+### **Copiar el token y probar CRUD:**
+```bash
+# Obtener usuarios (usar el token del login anterior)
+curl -X GET http://localhost:5167/api/users \
+-H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Crear usuario
+curl -X POST http://localhost:5167/api/users \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer TU_TOKEN_AQUI" \
+-d '{
+  "name": "Juan Pérez",
+  "email": "juan@test.com",
+  "password": "123456"
+}'
+```
+
+### **Probar servicio externo:**
+```bash
+curl -X GET http://localhost:5167/api/auth/external-data
+```
+
+## **10. Usar Postman (más fácil):**
+
+1. **Importa esta colección en Postman:**
+
+```json
+{
+  "info": {
+    "name": "TestBCP API"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5167/api/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5167",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Get Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5167/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5167",
+          "path": ["api", "users"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## **11. Si hay errores comunes:**
+
+### **Error de conexión a base de datos:**
+```bash
+# Verificar que Docker está corriendo
+docker ps
+
+# Si no está, reiniciar el contenedor
+docker start sqlserver
+```
+
+### **Error de puertos:**
+El puerto puede cambiar. Revisa la consola donde ejecutaste `dotnet run` para ver el puerto correcto.
+
+### **Error de migración:**
+```bash
+# Si hay problemas con migraciones
+dotnet ef database drop --force
+dotnet ef migrations remove
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+## **12. Resumen de endpoints para la prueba:**
+
+- **POST** `/api/auth/login` - Login (no requiere token)
+- **GET** `/api/auth/external-data` - Servicio externo (no requiere token)
+- **GET** `/api/users` - Obtener usuarios (requiere token)
+- **POST** `/api/users` - Crear usuario (requiere token)
+- **PUT** `/api/users/{id}` - Actualizar usuario (requiere token)
+- **DELETE** `/api/users/{id}` - Eliminar usuario (requiere token)
+

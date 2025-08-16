@@ -1,0 +1,2 @@
+USE TestBCP;
+SELECT * FROM Users;
