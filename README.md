@@ -36,8 +36,6 @@ TestBCP/
 └── TestBCP.csproj
 ```
 
-Ahora te doy cada archivo completo:
-
 ## **Program.cs** (reemplaza el contenido completo)
 ````csharp
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -843,3 +841,130 @@ GO
    - CRUD Users: `http://localhost:5000/api/users`
 
 ¡Listo! Cada archivo tiene su ubicación específica y extensión correcta.
+
+¡Perfecto! En Mac puedes usar Azure Data Studio sin problemas. Te explico cómo:
+
+## **1. Ejecutar SQL en Azure Data Studio:**
+
+1. **Abre Azure Data Studio**
+2. **Conecta a tu servidor SQL** (puede ser SQL Server local en Docker, Azure SQL, etc.)
+3. **Crea una nueva consulta** (New Query)
+4. **Copia y pega todo el contenido** del archivo `SQL/StoredProcedures.sql`
+5. **Ejecuta todo el script** (Cmd+Shift+E o botón Run)
+
+## **2. Si no tienes SQL Server en Mac, usa Docker:**
+
+```bash
+# Instalar SQL Server en Docker (recomendado para Mac)
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=TuPassword123!" \
+   -p 1433:1433 --name sqlserver --hostname sqlserver \
+   -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+Luego conecta Azure Data Studio a:
+- **Server**: `localhost,1433`
+- **Username**: `sa`
+- **Password**: `TuPassword123!`
+
+## **3. Actualiza appsettings.json para Mac:**
+
+````json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost,1433;Database=TestBCP;User Id=sa;Password=TuPassword123!;TrustServerCertificate=true"
+  },
+  "JwtSettings": {
+    "SecretKey": "MiClaveSecretaSuperSegura123456789",
+    "Issuer": "TestBCP",
+    "Audience": "TestBCP"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+````
+
+## **4. Comandos para Mac (todos iguales):**
+
+```bash
+# Crear proyecto
+dotnet new webapi -n TestBCP
+cd TestBCP
+
+# Instalar paquetes
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+
+# Ejecutar proyecto
+dotnet run
+```
+
+## **5. Alternativa: Usar SQLite (más fácil para pruebas):**
+
+Si quieres evitar Docker, puedes cambiar a SQLite:
+
+**Instalar SQLite:**
+```bash
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+```
+
+**Cambiar appsettings.json:**
+````json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=testbcp.db"
+  }
+}
+````
+
+**Cambiar Program.cs** (línea del DbContext):
+````csharp
+// Cambiar esta línea:
+// options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Por esta:
+options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+````
+
+**Y crear la base con migraciones:**
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+## **6. Script SQL simplificado para SQLite:**
+
+Si usas SQLite, crea este archivo **SQL/sqlite_setup.sql**:
+
+```sql
+-- Para SQLite (más simple)
+CREATE TABLE Users (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Email TEXT NOT NULL UNIQUE,
+    Password TEXT NOT NULL,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    IsActive BOOLEAN DEFAULT 1
+);
+
+-- Insertar usuario de prueba
+INSERT INTO Users (Name, Email, Password) 
+VALUES ('Test User', 'test@test.com', 'e10adc3949ba59abbe56e057f20f883e4bb077a59e5d0e3b4f2c8a84ee47b0f1');
+```
+
+## **Recomendación para la prueba:**
+
+**Opción 1 (SQL Server + Docker)**: Más profesional, usa stored procedures
+**Opción 2 (SQLite)**: Más rápido de configurar, pero tendrías que modificar los servicios para no usar stored procedures
+
+Para la prueba técnica, te recomiendo **Docker + SQL Server** porque:
+1. Demuestra conocimiento de SQL Server
+2. Usa stored procedures como piden
+3. Es más parecido al entorno real del BCP
+
+¿Con cuál opción te sientes más cómodo?
